@@ -186,7 +186,12 @@ def steveFunction1(phenny,input):
   if not input.group(1):
     return phenny.say("no input")
   else:
-    return phenny.say(input.group(1))
+    if input.group(2):
+      if "g" in input.group(2):
+        phenny.say("We have a G")
+      else:
+        phenny.say("No G here")
+  return
 steveFunction1.commands = ['steveFunction1','steveFunction2']
 steveFunction1.priority = 'low'
 
