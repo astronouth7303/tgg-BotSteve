@@ -7,10 +7,8 @@ Licensed under the Eiffel Forum License 2.
 http://inamidst.com/phenny/
 """
 
-import time
-from tools import deprecated
+import time, fnmatch
 from decimal import *
-import os
 
 storage = {} # Default value
 # storage is a persistant value, automagically loaded and saved by the bot.
@@ -21,42 +19,59 @@ storage = {} # Default value
 def f_seen(phenny, input):
     """.seen <nick> - Reports when <nick> was last seen."""
     global storage
-     
+    
     try:
         nick = input.group(2).lower()
     except AttributeError:
-        self.msg(origin.sender, "No user provided!")
+        phenny.reply("No user provided!")
         return 
       
     #misc easter eggs
     if nick == "kyle":
-        return self.reply("He's about this tall?  Seen Kyle?")
+        return phenny.reply("He's about this tall?  Seen Kyle?")
     if nick == phenny.nick.lower():
-        return self.reply("I'm right here, actually.")
+        return phenny.reply("I'm right here, actually.")
     
-    if item: 
+    nicks = []
+    if nick in storage:
         channel, storedTime = storage[nick]
-        t = time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(storedTime))
-        currentTime = time.strftime('%H:%M:%S UTC', time.gmtime())
-        rawTimeDifference_hours = (time.time() - storedTime) / 3600
-        formattedTimeDiff = Decimal(str(rawTimeDifference_hours)).quantize(Decimal('1.00'))
-        
-        #requires python 2.7
-        #timeDifference_hr = timeDifference_sec.total_seconds() / 3600
-          
-        msg = "I last saw %s %s hours ago at %s on %s.  Current time: %s" % (nick, formattedTimeDiff, t, channel, currentTime)
-        phenny.reply(msg)
-      
-    #no record of user
-    else: 
+        nicks.append((nick, channel, storedTime))
+    else:
+        for n in fnmatch.filter(storage.keys(), nick):
+            channel, storedTime = storage[n]
+            nicks.append((n, channel, storedTime))
+    
+    nicks.sort(key=lambda i: -i[2])
+    
+    if not nicks:
         phenny.reply("Sorry, I haven't seen %s around." % nick)
+    else:
+        fmt = "I last saw %(nick)s %(formattedTimeDiff)s hours ago at %(t)s on %(channel)s.  Current time: %(currentTime)s"
+        currentTime = time.strftime('%H:%M:%S UTC', time.gmtime())
+        for nick, channel, storedTime in nicks[:5]:
+            t = time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(storedTime))
+            rawTimeDifference_hours = (time.time() - storedTime) / 3600
+            formattedTimeDiff = Decimal(str(rawTimeDifference_hours)).quantize(Decimal('1.00'))
+            
+            #requires python 2.7
+            #timeDifference_hr = timeDifference_sec.total_seconds() / 3600
+              
+            msg = fmt % locals()
+            phenny.reply(msg)
+            if len(nicks) > 1:
+                fmt = "I last saw %(nick)s %(formattedTimeDiff)s hours ago at %(t)s on %(channel)s."
+        
+        if len(nicks) == 6:
+            phenny.reply("(1 more nick found)")
+        elif len(nicks) > 5:
+            phenny.reply("(%i more nicks found)" % (len(nicks) - 5))
 f_seen.rule = (['seen', 'lastseen'], r'(\S+)')
 
 def f_note(phenny, input): 
     global storage
     try:
-        if origin.sender.startswith('#'): 
-            storage[origin.nick.lower()] = (origin.sender, time.time())
+        if input.sender.startswith('#'): 
+            storage[input.nick.lower()] = (input.sender, time.time())
     except:
         import traceback
         traceback.print_exc()

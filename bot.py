@@ -105,7 +105,9 @@ class Phenny(irc.Bot):
          if name in excluded_modules: continue
          try: module = imp.load_source(name, filename) #XXX: This is an obsolete function
          except Exception, e: 
-            print >> sys.stderr, "Error loading %s: %s (in bot.py)" % (name, e)
+            print >> sys.stderr, "Error loading %s (in bot.py):" % (name)
+            import traceback
+            traceback.print_exc()
          else:
             try:
                 #STORAGE: Initialize the module store
@@ -114,14 +116,14 @@ class Phenny(irc.Bot):
                 if hasattr(module, 'setup'): 
                    module.setup(self)
             except:
-                #TODO: Report exception
-                raise
+                import traceback
+                traceback.print_exc()
             else:
                 self.register(vars(module))
                 self.modules.append(module)
 
       if self.modules: 
-         print >> sys.stderr, 'Registered modules:', ', '.join(m.__name__ for m in self.modules)
+         print >> sys.stderr, 'Registered modules:', ', '.join(sorted(m.__name__ for m in self.modules))
       else: print >> sys.stderr, "Warning: Couldn't find any modules"
 
       self.bind_commands()
