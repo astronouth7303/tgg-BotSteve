@@ -18,58 +18,48 @@ storage = {} # Default value
 #def setup(self): 
 #    pass
 
-@deprecated
-def f_seen(self, origin, match, args): 
-  """.seen <nick> - Reports when <nick> was last seen."""
-  global storage
-  
-  if origin.sender == '#talis': return
-  try:
-    nick = match.group(2).lower()
-  except AttributeError:
-    self.msg(origin.sender, "No user provided!")
-    return 
-  
-  #misc easter eggs
-  if nick.lower() == "kyle":
-    return self.msg(origin.sender, "He's about this tall?  Seen Kyle?")
-  if nick.lower() == "botsteve":
-    return self.msg(origin.sender, "I'm right here, actually.")
-  
-  if nick in storage: 
-      channel, storedTime = storage[nick]
-      t = time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(storedTime))
-      currentTime = time.strftime('%H:%M:%S UTC', time.gmtime())
-      rawTimeDifference_hours = (time.time() - storedTime) / 3600
-      formattedTimeDiff = Decimal(str(rawTimeDifference_hours)).quantize(Decimal('1.00'))
+def f_seen(phenny, input):
+    """.seen <nick> - Reports when <nick> was last seen."""
+    global storage
+     
+    try:
+        nick = input.group(2).lower()
+    except AttributeError:
+        self.msg(origin.sender, "No user provided!")
+        return 
       
-      #requires python 2.7
-      #timeDifference_hr = timeDifference_sec.total_seconds() / 3600
+    #misc easter eggs
+    if nick == "kyle":
+        return self.reply("He's about this tall?  Seen Kyle?")
+    if nick == phenny.nick.lower():
+        return self.reply("I'm right here, actually.")
+    
+    if item: 
+        channel, storedTime = storage[nick]
+        t = time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(storedTime))
+        currentTime = time.strftime('%H:%M:%S UTC', time.gmtime())
+        rawTimeDifference_hours = (time.time() - storedTime) / 3600
+        formattedTimeDiff = Decimal(str(rawTimeDifference_hours)).quantize(Decimal('1.00'))
+        
+        #requires python 2.7
+        #timeDifference_hr = timeDifference_sec.total_seconds() / 3600
+          
+        msg = "I last saw %s %s hours ago at %s on %s.  Current time: %s" % (nick, formattedTimeDiff, t, channel, currentTime)
+        phenny.reply(msg)
       
-
-      msg = "I last saw %s %s hours ago at %s on %s.  Current time: %s" % (nick, formattedTimeDiff, t, channel, currentTime)
-      self.msg(origin.sender, str(origin.nick) + ': ' + msg)
-  
-  #no record of user
-  else: self.msg(origin.sender, "Sorry, I haven't seen %s around." % nick)
+    #no record of user
+    else: 
+        phenny.reply("Sorry, I haven't seen %s around." % nick)
 f_seen.rule = (['seen', 'lastseen'], r'(\S+)')
-f_seen.thread = False
 
-@deprecated
-def f_note(self, origin, match, args): 
-   def note(self, origin, match, args): 
-      global storage
-      if origin.sender.startswith('#'): 
-         # if origin.sender == '#inamidst': return
-         storage[origin.nick.lower()] = (origin.sender, time.time())
-
-      # if not hasattr(self, 'chanspeak'): 
-      #    self.chanspeak = {}
-      # if (len(args) > 2) and args[2].startswith('#'): 
-      #    self.chanspeak[args[2]] = args[0]
-
-   try: note(self, origin, match, args)
-   except Exception, e: print e
+def f_note(phenny, input): 
+    global storage
+    try:
+        if origin.sender.startswith('#'): 
+            storage[origin.nick.lower()] = (origin.sender, time.time())
+    except:
+        import traceback
+        traceback.print_exc()
 f_note.rule = r'(.*)'
 f_note.priority = 'low'
 
